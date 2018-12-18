@@ -1,0 +1,6 @@
+[report]
+show_missing = true
+omit = *test_*
+
+[run]
+plugins = Cython.Coverage

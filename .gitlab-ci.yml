@@ -1,0 +1,29 @@
+stages:
+  - test
+  - build
+
+test:
+  image: condaforge/linux-anvil
+  stage: test
+  script:
+    - conda config --add channels bioconda
+    - conda env update -f environment.yml
+    - conda install pytest-cov
+    - python3 setup.py build_ext -D CYTHON_TRACE_NOGIL
+    - python3 setup.py develop
+    - pytest --verbose --cov seekmer/ --pyargs seekmer
+  coverage: '/TOTAL.*\s+(\d+%)$/'
+
+build_conda:
+  image: condaforge/linux-anvil
+  stage: build
+  script:
+    - conda config --add channels bioconda
+    - conda install -y conda-verify anaconda-client
+    - anaconda login --username guanlab --password $ANACONDA_GUANLAB_PASSWORD
+    - conda config --set anaconda_upload yes
+    - conda build --python=3.5 recipe/meta.yaml
+    - conda build --python=3.6 recipe/meta.yaml
+    - anaconda logout
+  except:
+    - tags

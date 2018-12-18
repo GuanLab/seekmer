@@ -1,0 +1,84 @@
+@read7771724/ENST00000270142.10 cdna chromosome:GRCh38:21:31659622:31668931:1 gene:ENSG00000142168.14 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:SOD1 description:superoxide dismutase 1 [Source:HGNC Symbol;Acc:HGNC:11179];mate1:114-213;mate2:245-344
+CTCGGAACCAGGACCTCGGCGTGGCCTAGCGAGTTATGGCGACGAAGGCCGTGTGCGTGCTGAAGGGCGACGGCCCAGTGCAGGGCATCATCAATTTCGA
++
+####################################################################################################
+@read7771725/ENST00000270142.10 cdna chromosome:GRCh38:21:31659622:31668931:1 gene:ENSG00000142168.14 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:SOD1 description:superoxide dismutase 1 [Source:HGNC Symbol;Acc:HGNC:11179];mate1:249-348;mate2:405-504
+ACCAGTGTTCGGCCAATGATGCAATGGTCTCCTGAGAGTGAGATCACAGAATCTTCAATAGACACATCGGCCACACCATCTTTGTCAGCAGTCACATTGC
++
+####################################################################################################
+@read7771998/ENST00000270142.10 cdna chromosome:GRCh38:21:31659622:31668931:1 gene:ENSG00000142168.14 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:SOD1 description:superoxide dismutase 1 [Source:HGNC Symbol;Acc:HGNC:11179];mate1:375-474;mate2:523-622
+AGGATGAAGAGAGGCATGTTGGAGACTTGGGCAATGTGACTGCTGACAAAGATTGTGTGGCCGATGTGTCTATTGAAGATTCTGTGATCTCACTCTCAGG
++
+####################################################################################################
+@read7771999/ENST00000270142.10 cdna chromosome:GRCh38:21:31659622:31668931:1 gene:ENSG00000142168.14 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:SOD1 description:superoxide dismutase 1 [Source:HGNC Symbol;Acc:HGNC:11179];mate1:48-147;mate2:174-273
+CCTTCAGTCAGTCCTTTAATGCTTCCCCACACCTTCACTGGTCCATTACTTTCCTTCTGCTCGAAATGGATGATGCCCAGCACTGGGCCGTCGCCCTTCA
++
+####################################################################################################
+@read7772218/ENST00000270142.10 cdna chromosome:GRCh38:21:31659622:31668931:1 gene:ENSG00000142168.14 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:SOD1 description:superoxide dismutase 1 [Source:HGNC Symbol;Acc:HGNC:11179];mate1:641-740;mate2:820-919
+ACAGGGTTTTTATTCACAGGCTTGAATGACAAAGAAATTCTGACAAGTTTAATACCCATCTGTGATTTAAGTCTGGCAAAATACAGGTCATTGAAACAGA
++
+####################################################################################################
+@read7522622/ENST00000290299.6 cdna chromosome:GRCh38:21:33903453:33915980:-1 gene:ENSG00000241837.6 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:ATP5O description:ATP synthase, H+ transporting, mitochondrial F1 complex, O subunit [Source:HGNC Symbol;Acc:HGNC:850];mate1:353-452;mate2:497-596
+TATTCTGCTGCATCAAAACAGAATAAGCTGGAGCAAGTAGAAAAGGAGTTGTTGAGAGTAGCACACATCCTGAAGGAACCCAAAGTGGCTGCTTCTGTTT
++
+####################################################################################################
+@read7523090/ENST00000290299.6 cdna chromosome:GRCh38:21:33903453:33915980:-1 gene:ENSG00000241837.6 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:ATP5O description:ATP synthase, H+ transporting, mitochondrial F1 complex, O subunit [Source:HGNC Symbol;Acc:HGNC:850];mate1:449-548;mate2:614-713
+TTAGGAAGCTCTTGAGGACAGTTTTTAATTCAGAGAGTGTGGCTTCTTCTAAAGGAGATGCAGAGGTCACTGTGCAAGGTACCTCTCCGCGATGGACACT
++
+####################################################################################################
+@read7523103/ENST00000290299.6 cdna chromosome:GRCh38:21:33903453:33915980:-1 gene:ENSG00000241837.6 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:ATP5O description:ATP synthase, H+ transporting, mitochondrial F1 complex, O subunit [Source:HGNC Symbol;Acc:HGNC:850];mate1:428-527;mate2:570-669
+TCTTCTAAAGGAGATGCAGAGGTCACTGTGCAAGGTACCTCTCCGCGATGGACACTCATCATGGTAGAAAAGGCAGAAACGACTCCTTGGGTATTGCTTA
++
+####################################################################################################
+@read7524071/ENST00000290299.6 cdna chromosome:GRCh38:21:33903453:33915980:-1 gene:ENSG00000241837.6 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:ATP5O description:ATP synthase, H+ transporting, mitochondrial F1 complex, O subunit [Source:HGNC Symbol;Acc:HGNC:850];mate1:435-534;mate2:571-670
+TTCTTCTAAAGGAGATGCAGAGGTCACTGTGCAAGGTACCTCTCCGCGATGGACACTCATCATGGTAGAAAAGGCAGAAACGACTCCTTGGGTAGTGCTT
++
+####################################################################################################
+@read7524387/ENST00000290299.6 cdna chromosome:GRCh38:21:33903453:33915980:-1 gene:ENSG00000241837.6 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:ATP5O description:ATP synthase, H+ transporting, mitochondrial F1 complex, O subunit [Source:HGNC Symbol;Acc:HGNC:850];mate1:427-526;mate2:600-699
+GGAACCCAAAGTGGCTGCTTCTGTTTTGAATCCCTATGTGAAGCGTTCCATTAAAGTGAAAAGCCTAAATGACATCACAGCAAAAGAGAGGTTCTCACCC
++
+####################################################################################################
+@read7522614/ENST00000290299.6 cdna chromosome:GRCh38:21:33903453:33915980:-1 gene:ENSG00000241837.6 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:ATP5O description:ATP synthase, H+ transporting, mitochondrial F1 complex, O subunit [Source:HGNC Symbol;Acc:HGNC:850];mate1:208-307;mate2:360-459
+CGGGGAGAAGATGGCTGCCCCAGCAGTGTCCGGGCTCTCCCGGCAAGTGCGATGCTTCAGTACCTCTGTGGTCAGACCATTTGCCAAGCTTGTGAGGCCT
++
+####################################################################################################
+@read7523089/ENST00000290299.6 cdna chromosome:GRCh38:21:33903453:33915980:-1 gene:ENSG00000241837.6 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:ATP5O description:ATP synthase, H+ transporting, mitochondrial F1 complex, O subunit [Source:HGNC Symbol;Acc:HGNC:850];mate1:716-815;mate2:805-904
+CAAGGCCAAGTATTGAAATTGGAGNCTAAGGCTGATCCGTCAATCTTGGGTGGCATGATTGTGCGCATTGCCGAGAAATATGTTGACATGTCTGTCAAGA
++
+####################################################################################################
+@read7523275/ENST00000290299.6 cdna chromosome:GRCh38:21:33903453:33915980:-1 gene:ENSG00000241837.6 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:ATP5O description:ATP synthase, H+ transporting, mitochondrial F1 complex, O subunit [Source:HGNC Symbol;Acc:HGNC:850];mate1:35-134;mate2:186-285
+GGGTCCAGCCCTTACCACTGCTAAGAACTACAACTCCCAGCCCGAGGGAGGTCTCTGCGCCTGCGGCCTGACGCCCTACGCCTACACTTCCCAGAGAACC
++
+####################################################################################################
+@read7523498/ENST00000290299.6 cdna chromosome:GRCh38:21:33903453:33915980:-1 gene:ENSG00000241837.6 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:ATP5O description:ATP synthase, H+ transporting, mitochondrial F1 complex, O subunit [Source:HGNC Symbol;Acc:HGNC:850];mate1:364-463;mate2:525-624
+CGATGGACACTCATCATGGTANAAAAGGCAGAAACGACTCCTTGGGTATTGCTTAATCGACCATTTTCAGCAAGCAAATTGATCAGATTGGTAGTGAGGG
++
+####################################################################################################
+@read7771722/ENST00000270142.10 cdna chromosome:GRCh38:21:31659622:31668931:1 gene:ENSG00000142168.14 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:SOD1 description:superoxide dismutase 1 [Source:HGNC Symbol;Acc:HGNC:11179];mate1:55-154;mate2:219-318
+CCTGCTGTATTATCTCCAAACTCATGAACATGGAATCCATGCAGGCCTTCAGTCAGTCCTTTAATGCTTCCCCACACCTTCACTGGTCCATTACTTTCCT
++
+####################################################################################################
+@read7771723/ENST00000270142.10 cdna chromosome:GRCh38:21:31659622:31668931:1 gene:ENSG00000142168.14 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:SOD1 description:superoxide dismutase 1 [Source:HGNC Symbol;Acc:HGNC:11179];mate1:7-106;mate2:162-261
+CCTTTAATGCTTCCCCANACCTTCACTGGTCCATTACTTTCCTTCTGCTCGAAATTGATGATGCCCTGCACTGGGCCGTCGCCCTTCAGCACGCACACGG
++
+####################################################################################################
+@read1891979/ENST00000291527.2 cdna chromosome:GRCh38:21:42362282:42366594:-1 gene:ENSG00000160182.2 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:TFF1 description:trefoil factor 1 [Source:HGNC Symbol;Acc:HGNC:11755];mate1:336-435;mate2:438-537
+AGAGGAGTGTGAATTTTAGACACTTCTGCAGGGATCTGCCTGCATCCTGACGCGGTGCCGTCCCCAGCACNGTGATTAGTCCCAGAGCTCGGCTGCCACC
++
+####################################################################################################
+@read1892360/ENST00000291527.2 cdna chromosome:GRCh38:21:42362282:42366594:-1 gene:ENSG00000160182.2 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:TFF1 description:trefoil factor 1 [Source:HGNC Symbol;Acc:HGNC:11755];mate1:134-233;mate2:256-355
+TGGTCCTGGTGTCCATGCTGGCCCTCGGCACCCTGGCCGAGGCCCAGACAGAGACGTGTACAGTGGCCGCCCGTGAAAGACAGAATTGTGGTTTTCCTGG
++
+####################################################################################################
+@read4307621/ENST00000284971.7 cdna chromosome:GRCh38:21:25724480:25734972:-1 gene:ENSG00000154723.12 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:ATP5J description:ATP synthase, H+ transporting, mitochondrial Fo complex subunit F6 [Source:HGNC Symbol;Acc:HGNC:847];mate1:260-359;mate2:365-464
+GACAAGATTAGAGAATACAAATCTAAGCGACAGACATCTGGAGCACCTGTTGATCCTAGTTCAGAGTATCAGCAAGAGCTGGAGAGGGAGCTTTTTAAGC
++
+####################################################################################################
+@read4307702/ENST00000284971.7 cdna chromosome:GRCh38:21:25724480:25734972:-1 gene:ENSG00000154723.12 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:ATP5J description:ATP synthase, H+ transporting, mitochondrial Fo complex subunit F6 [Source:HGNC Symbol;Acc:HGNC:847];mate1:220-319;mate2:350-449
+ATTTAATAAGGAACTTGATCCTATACAGAAACTCTTTGTGGACAAGATTAGAGAATACAAATCTAAGCGACAGACATCTGGAGGACCTGTTGATGCTAGT
++
+####################################################################################################
+@read4307703/ENST00000284971.7 cdna chromosome:GRCh38:21:25724480:25734972:-1 gene:ENSG00000154723.12 gene_biotype:protein_coding transcript_biotype:protein_coding gene_symbol:ATP5J description:ATP synthase, H+ transporting, mitochondrial Fo complex subunit F6 [Source:HGNC Symbol;Acc:HGNC:847];mate1:3-102;mate2:242-341
+CCAGCTCTTGCTGATACTCTGAACTAGCATCAACAGGTCCTCCAGATGTCTGTCGCTTAGATTTGTATTCTCTAATCTTGTCCACAAAGAGTTTCTGTAT
++
+####################################################################################################
