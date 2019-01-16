@@ -1,14 +1,14 @@
 __all__ = ('quantify', )
 
+import warnings
+
 import logbook
 import numpy
-import scipy.optimize
-
 
 _LOG = logbook.Logger(__name__)
 
 
-def quantify(index, class_map, class_count, mean_fragment_length, x=None):
+def quantify(index, class_map, class_count, x=None):
     """Estimate the transcript abundance.
 
     Parameters
@@ -19,8 +19,6 @@ def quantify(index, class_map, class_count, mean_fragment_length, x=None):
         An array of equivalent classes and their mappable targets.
     class_count : numpy.ndarray
         The number of reads in each class.
-    mean_fragment_length: float
-        The harmonic mean of the fragment lengths
     x: numpy.ndarray
         The initial guess of the abundance.
 
@@ -31,77 +29,53 @@ def quantify(index, class_map, class_count, mean_fragment_length, x=None):
     """
     if class_map.size == 0:
         return numpy.zeros(index.transcripts.size, dtype='f4')
+    transcript_length = index.transcripts['length'].astype('f4')
     if x is None:
-        x = numpy.zeros(len(index.transcripts), dtype='f4')
-    transcript_length = (index.transcripts['length'].astype('f4')
-                         - mean_fragment_length).clip(min=1.0)
-    convergence_check = _convergence_check(x, 50000)
-    try:
-        x = scipy.optimize.minimize(
-            _score, x, args=(transcript_length, class_map, class_count),
-            method='L-BFGS-B', jac=True, callback=convergence_check,
-            tol=numpy.finfo('f8').eps,
-        )['x']
-    except StopIteration as e:
-        x = e.args[0]
-    x = numpy.exp(x - x.max())
-    x /= x.sum() / 1000000
-    x[x < 0.01] = 0.0
+        x = numpy.ones(len(index.transcripts), dtype='f4') / transcript_length
+    x /= x.sum()
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            'ignore', 'divide by zero encountered in true_divide',
+        )
+        warnings.filterwarnings(
+            'ignore', 'invalid value encountered in true_divide',
+        )
+        x = em(x, transcript_length, class_map, class_count)
     x /= x.sum() / 1000000
     return x
 
 
-def _score(x, l, class_map, class_count):
-    """
-    Compute the negative log likelihood function.
+def em(x, l, class_map, class_count):
+    """Expectation-maximization.
 
     Parameters
     ----------
-    x: numpy.ndarray
-        The transformed expression levels. Take softmax to get the
-        original expression levels.
-    l: numpy.ndarray
-        All the transcript length. It should have the size of x.
-    class_count : numpy.ndarray
-        The read map array.
-    class_map : numpy.ndarray
-        The class-to-transcript annotation array of the read map.
+    x: numpy.ndarray[float]
+        The initial guess of the abundance.
+    l: numpy.ndarray[float]
+        The harmonic mean of the fragment lengths
+    class_map : numpy.ndarray[int]
+        An array of equivalent classes and their mappable targets.
+    class_count : numpy.ndarray[int]
+        The number of reads in each class.
 
     Returns
     -------
-    float
-        The negative log likelihood function
-    numpy.ndarray
-        The gradient of x
+    numpy.ndarray[float]
+        The expression level of the transcripts.
     """
-    alpha = numpy.exp(x)
-    alpha /= alpha.sum()
-    alpha_over_l = alpha / l
-    class_inner = numpy.bincount(
-        class_map[0], weights=alpha_over_l[class_map[1]],
-        minlength=class_count.size,
-    )
-    value = -(class_count * numpy.log(class_inner)).sum()
-    gradient = alpha * class_count.sum() - alpha_over_l * numpy.bincount(
-        class_map[1], weights=(class_count / class_inner)[class_map[0]],
-        minlength=x.size,
-    )
-    return value, gradient
-
-
-def _convergence_check(initial_x, max_round):
-    i = 0
-
-    def _wrapper(x):
-        nonlocal initial_x, i
-        i += 1
-        if ((x < 1e-8) | (numpy.absolute(initial_x - x) / x < 1e-5)).all():
-            _LOG.info('Converged after {} round(s) of iteration', i)
-            _LOG.debug(x)
-            _LOG.debug(numpy.absolute(initial_x - x))
-            raise StopIteration(x)
-        if i == max_round:
-            _LOG.info('Maximum rounds of iteration ({}) reached.', i)
-            raise StopIteration(x)
-        initial_x = x
-    return _wrapper
+    n = class_count.sum()
+    old_x = x
+    x = x[class_map[1]]
+    class_inner = numpy.bincount(class_map[0], weights=x,
+                                 minlength=class_count.size) / class_count
+    x = numpy.bincount(class_map[1], weights=x / class_inner[class_map[0]],
+                       minlength=l.size) / l / n
+    while (numpy.absolute(x - old_x) / x)[x > 1e-8].max() > 0.01:
+        old_x = x
+        x = x[class_map[1]]
+        class_inner = numpy.bincount(class_map[0], weights=x,
+                                     minlength=class_count.size) / class_count
+        x = numpy.bincount(class_map[1], weights=x / class_inner[class_map[0]],
+                           minlength=l.size) / l / n
+    return x

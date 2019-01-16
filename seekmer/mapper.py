@@ -14,7 +14,6 @@ from . import common
 from . import quantifier
 from ._mapper import (MAX_FRAGMENT_LENGTH, ReadMapper)
 
-
 _LOG = logbook.Logger(__name__)
 
 BUFFER_SIZE = 65536
@@ -188,8 +187,7 @@ def run(index_path, output_path, fastq_paths, job_count, save_readmap,
     _LOG.info('Aligned {} reads ({:.2f}%)',
               int(aligned), aligned / (aligned + unaligned) * 100)
     _LOG.info('Quantifying transcripts')
-    result = quantifier.quantify(index, class_map, class_count,
-                                 mean_fragment_length)
+    result = quantifier.quantify(index, class_map, class_count)
     _LOG.info('Quantified transcripts')
     transcript_id = numpy.char.decode(index.transcripts['transcript_id'])
     result = pandas.Series(result, name='tpm', index=transcript_id)
