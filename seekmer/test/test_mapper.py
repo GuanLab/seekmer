@@ -13,7 +13,7 @@ def seekmer_index(shared_datadir):
     gtf_path = shared_datadir / 'human.ens90.21.gtf.gz'
     fasta_path = shared_datadir / 'human.cdna.21.fa.bz2'
     exome = index_builder.load_exome(gtf_path)
-    ids, sequences = index_builder.extract_transcripts(fasta_path)
+    ids, sequences = index_builder.read_transcripts(fasta_path)
     index = index_builder.build(ids, sequences, exome)
     return index
 

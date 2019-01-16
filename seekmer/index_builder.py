@@ -1,7 +1,6 @@
 __all__ = ('add_subcommand_parser', 'run', 'build', 'load_exome',
-           'extract_transcripts', 'extract_sequences',
+           'read_transcripts', 'extract_sequences',
            'extract_transcripts_from_genome', 'ContigAssembler')
-
 
 import gc
 import pathlib
@@ -10,9 +9,8 @@ import logbook
 import numpy
 import pandas
 
-from ._index_builder import (extract_sequences, ContigAssembler)
 from . import common
-
+from ._index_builder import (extract_sequences, ContigAssembler)
 
 _LOG = logbook.Logger(__name__)
 
@@ -84,30 +82,30 @@ def run(fasta_path, gtf_path, index_path, use_transcriptome=False, **__):
     _LOG.info('Building index')
     exome = load_exome(gtf_path)
     if use_transcriptome:
-        transcriptome, sequences = extract_transcripts(fasta_path)
+        transcript_ids, sequences = read_transcripts(fasta_path)
     else:
-        transcriptome, sequences = extract_transcripts_from_genome(fasta_path,
-                                                                   exome)
-    index = build(transcriptome, sequences, exome)
+        transcript_ids, sequences = extract_transcripts_from_genome(
+            fasta_path, exome,
+        )
+    index = build(transcript_ids, sequences, exome)
     index.save(index_path)
 
 
-def build(transcriptome, sequences, exome):
+def build(transcript_ids, sequences, exome):
     """Build a Seekmer index for the given transcriptome.
 
     Parameters
     ----------
-    transcriptome : list[bytes]
+    transcript_ids : list[bytes]
         Transcriptome
-    sequences : list of bytes
+    sequences : list[bytes]
         Transcriptome
     exome : numpy.recarray
         Transcriptome
     """
-    if len(transcriptome) == 0:
+    if len(transcript_ids) == 0:
         raise ValueError('no transcripts found')
-    transcriptome, sequences, exome = _compile_omics(transcriptome, sequences,
-                                                     exome)
+    transcriptome, exome = _compile_omics(transcript_ids, sequences, exome)
     if len(exome) == 0:
         raise RuntimeError('no matching exon records')
     assembler = ContigAssembler()
@@ -155,20 +153,24 @@ def load_exome(path):
     transcript_id_length = table['transcript_id'].str.len().max()
     table['gene_id'] = table['gene_id'].str.encode('utf-8')
     gene_id_length = table['gene_id'].str.len().max()
+    table = table[[
+        'transcript_id', 'gene_id', 'exon_number', 'chromosome', 'start',
+        'end', 'strand',
+    ]]
     table = table.to_records(index=False).astype([
+        ('transcript_id', 'S{}'.format(transcript_id_length)),
+        ('gene_id', 'S{}'.format(gene_id_length)),
+        ('exon_number', 'i4'),
         ('chromosome', 'S{}'.format(chromosome_length)),
         ('start', 'i4'),
         ('end', 'i4'),
         ('strand', '?'),
-        ('transcript_id', 'S{}'.format(transcript_id_length)),
-        ('gene_id', 'S{}'.format(gene_id_length)),
-        ('exon_number', 'i4'),
     ])
     _LOG.info('Collected {} exon entries', len(table))
     return table
 
 
-def extract_transcripts(fasta):
+def read_transcripts(fasta):
     gc.collect()
     _LOG.info('Collecting transcripts')
     transcriptome = []
@@ -208,20 +210,22 @@ def extract_transcripts_from_genome(fasta, exome):
     return transcriptome, sequences
 
 
-def _compile_omics(transcriptome, sequences, exome):
-    exome = exome[numpy.in1d(exome['transcript_id'], transcriptome)]
-    common_transcripts, exon_index = numpy.unique(exome['transcript_id'],
-                                                  return_index=True)
-    exon_index.sort()
-    transcript_filter = numpy.in1d(transcriptome, common_transcripts)
-    sequences = [
-        seq for seq, check in zip(sequences, transcript_filter) if check
-    ]
+def _compile_omics(transcript_ids, sequences, exome):
+    transcript_id_length = max(len(id_) for id_ in transcript_ids)
+    transcript_ids = numpy.asarray(transcript_ids,
+                                   dtype='S{}'.format(transcript_id_length))
+    exome = exome[numpy.in1d(exome['transcript_id'], transcript_ids)]
+    exome.sort()
+    transcript_index = numpy.searchsorted(exome['transcript_id'],
+                                          transcript_ids)
+    mask = (numpy.take(exome, transcript_index, mode="clip")['transcript_id']
+            != transcript_ids)
     id_dtype = [(name, exome.dtype.fields[name][0])
                 for name in ['transcript_id', 'gene_id']]
-    transcriptome = numpy.zeros(len(exon_index),
+    transcriptome = numpy.zeros(len(transcript_ids),
                                 dtype=id_dtype + [('length', 'f8')])
-    transcriptome['transcript_id'] = exome[exon_index]['transcript_id']
-    transcriptome['gene_id'] = exome[exon_index]['gene_id']
+    transcriptome['transcript_id'] = transcript_ids
+    gene_id = numpy.take(exome, transcript_index, mode="clip")['gene_id']
+    transcriptome['gene_id'] = numpy.where(mask, b'', gene_id)
     transcriptome['length'] = [len(seq) for seq in sequences]
-    return transcriptome, sequences, exome
+    return transcriptome, exome
