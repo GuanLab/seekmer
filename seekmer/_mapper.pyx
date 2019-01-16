@@ -92,6 +92,7 @@ cdef class ReadMapper:
                         if length >= _MAX_FRAGMENT_LENGTH:
                             length = _MAX_FRAGMENT_LENGTH - 1
                         self.fragment_length_counts_view[length] += 1
+                libc.stdlib.free(read_array)
             result_ids = []
             for i in range(read_count):
                 result_ids.append(_get_ids(results[i]))
