@@ -1,63 +1,50 @@
 dependencies:
-  - logbook=1.4.1=py35h470a237_0
   - atomicwrites=1.2.1=py_0
   - attrs=18.2.0=py_0
-  - autopep8=1.4.3=py_0
   - blas=1.0=mkl
   - blosc=1.15.1=hfc679d8_0
   - bzip2=1.0.6=h470a237_2
   - ca-certificates=2018.11.29=ha4d7672_0
   - certifi=2018.8.24=py35_1001
   - cython=0.28.5=py35hfc679d8_0
-  - future=0.16.0=py35_2
   - hdf5=1.10.2=hc401514_3
-  - jedi=0.12.1=py35_0
+  - intel-openmp=2019.1=144
   - libffi=3.2.1=hfc679d8_5
   - libgcc-ng=7.2.0=hdf63c60_3
   - libgfortran=3.0.0=1
   - libgfortran-ng=7.2.0=hdf63c60_3
   - libstdcxx-ng=7.2.0=hdf63c60_3
+  - logbook=1.4.1=py35h470a237_0
   - lzo=2.10=h470a237_0
-  - mccabe=0.6.1=py_1
+  - mkl=2018.0.3=1
   - mkl_fft=1.0.9=py35_0
   - mkl_random=1.0.1=py35_0
   - more-itertools=4.3.0=py35_0
   - ncurses=6.1=hfc679d8_1
+  - numexpr=2.6.7=py35hedc7406_0
+  - numpy=1.15.0=py35h1b885b7_0
+  - numpy-base=1.15.0=py35h3dfced4_0
   - openssl=1.0.2p=h470a237_1
-  - parso=0.3.1=py_0
+  - pandas=0.23.4=py35h04863e7_0
   - pathlib2=2.3.2=py35_0
   - pip=18.0=py35_1001
   - pluggy=0.8.0=py_0
   - py=1.7.0=py_0
-  - pycodestyle=2.4.0=py_1
-  - pydocstyle=2.1.1=py35_0
-  - pyflakes=2.0.0=py_0
+  - pytables=3.4.4=py35ha205bf6_0
   - pytest=3.8.1=py35_0
   - pytest-datadir=1.2.1=py_0
   - pytest-runner=4.2=py_1
   - python=3.5.5=h5001a0f_2
   - python-dateutil=2.7.5=py_0
-  - python-jsonrpc-server=0.0.2=py_0
-  - python-language-server=0.21.2=py35_0
   - pytz=2018.7=py_0
   - readline=7.0=haf1bffa_1
-  - rope=0.10.7=py_1
+  - scipy=1.1.0=py35hfc37229_0
   - setuptools=40.4.3=py35_0
   - six=1.11.0=py35_1
-  - snowballstemmer=1.2.1=py_1
   - sqlite=3.26.0=hb1c47c0_0
   - tk=8.6.9=ha92aebf_0
   - wheel=0.32.0=py35_1000
   - xz=5.2.4=h470a237_1
-  - yapf=0.24.0=py_0
   - zlib=1.2.11=h470a237_3
-  - intel-openmp=2019.1=144
-  - mkl=2018.0.3=1
-  - numexpr=2.6.7=py35hedc7406_0
-  - numpy=1.15.0=py35h1b885b7_0
-  - numpy-base=1.15.0=py35h3dfced4_0
-  - pandas=0.23.4=py35h04863e7_0
-  - pytables=3.4.4=py35ha205bf6_0
-  - scipy=1.1.0=py35hfc37229_0
   - pip:
     - tables==3.4.4
