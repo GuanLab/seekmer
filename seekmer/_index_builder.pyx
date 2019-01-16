@@ -7,7 +7,6 @@ import numpy
 import numpy.core.records
 
 from . cimport _common
-from . cimport _coordinate
 from . cimport _kmer
 
 

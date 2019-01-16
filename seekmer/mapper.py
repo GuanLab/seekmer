@@ -1,5 +1,5 @@
 __all__ = ('MAX_FRAGMENT_LENGTH', 'add_subcommand_parser', 'MapResult', 'run',
-           'map_reads', 'quantify')
+           'map_reads')
 
 import collections
 import pathlib
@@ -72,6 +72,8 @@ class MapResult:
 
         Parameters
         ----------
+        read_names : list[bytes]
+            A list of read names, used in the read map file.
         iterable : list[tuple[int]]
             A list of potential mappable targets.
         """
@@ -110,7 +112,9 @@ class MapResult:
 
         Parameters
         ----------
-        iterable : numpy.ndarray[int]
+        fragment_length_counts : numpy.ndarray[int]
+            An array of numbers of reads with different estimated
+            fragment lengths.
         """
         self.fragment_length_counts += fragment_length_counts
 

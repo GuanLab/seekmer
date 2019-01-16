@@ -2,7 +2,6 @@
 
 __all__ = ('INVALID_INDEX', 'KMerIndex')
 
-import tempfile
 
 import logbook
 import numpy

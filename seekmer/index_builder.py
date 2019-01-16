@@ -97,7 +97,7 @@ def build(transcriptome, sequences, exome):
 
     Parameters
     ----------
-    transcriptome : numpy.recarray
+    transcriptome : list[bytes]
         Transcriptome
     sequences : list of bytes
         Transcriptome
@@ -212,11 +212,8 @@ def _compile_omics(transcriptome, sequences, exome):
     exome = exome[numpy.in1d(exome['transcript_id'], transcriptome)]
     common_transcripts, exon_index = numpy.unique(exome['transcript_id'],
                                                   return_index=True)
-    print('filtered_exon:', len(exon_index))
     exon_index.sort()
     transcript_filter = numpy.in1d(transcriptome, common_transcripts)
-    print('sequences:', len(sequences))
-    print('filtersize:', len(transcript_filter))
     sequences = [
         seq for seq, check in zip(sequences, transcript_filter) if check
     ]

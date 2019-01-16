@@ -1,4 +1,4 @@
-__all__ = ('quantify')
+__all__ = ('quantify', )
 
 import logbook
 import numpy
@@ -90,17 +90,18 @@ def _score(x, l, class_map, class_count):
 
 
 def _convergence_check(initial_x, max_round):
-    round = 0
+    i = 0
+
     def _wrapper(x):
-        nonlocal initial_x, round
-        round += 1
+        nonlocal initial_x, i
+        i += 1
         if ((x < 1e-8) | (numpy.absolute(initial_x - x) / x < 1e-5)).all():
-            _LOG.info('Converged after {} round(s) of iteration', round)
+            _LOG.info('Converged after {} round(s) of iteration', i)
             _LOG.debug(x)
             _LOG.debug(numpy.absolute(initial_x - x))
             raise StopIteration(x)
-        if round == max_round:
-            _LOG.info('Maximum rounds of iteration ({}) reached.', round)
-            raise Stopiteration(x)
+        if i == max_round:
+            _LOG.info('Maximum rounds of iteration ({}) reached.', i)
+            raise StopIteration(x)
         initial_x = x
     return _wrapper
