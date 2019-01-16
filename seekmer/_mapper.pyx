@@ -87,11 +87,11 @@ cdef class ReadMapper:
                                                   read_array[j + 1])
                         j += 2
                     results[i] = span.targets
-                length = span.end - span.begin + _kmer.size()
-                if length != 0:
-                    if length >= _MAX_FRAGMENT_LENGTH:
-                        length = _MAX_FRAGMENT_LENGTH - 1
-                    self.fragment_length_counts_view[length] += 1
+                    length = span.end - span.begin + _kmer.size()
+                    if length > 0:
+                        if length >= _MAX_FRAGMENT_LENGTH:
+                            length = _MAX_FRAGMENT_LENGTH - 1
+                        self.fragment_length_counts_view[length] += 1
             result_ids = []
             for i in range(read_count):
                 result_ids.append(_get_ids(results[i]))
@@ -99,6 +99,7 @@ cdef class ReadMapper:
             with self.map_result.lock:
                 self.map_result.update(read_names, result_ids)
             _LOG.debug('Mapped {} reads.', read_count)
+        libc.stdlib.free(results)
         with self.map_result.lock:
             self.map_result.merge_fragment_lengths(self.fragment_length_counts)
 
@@ -221,8 +222,8 @@ cdef class ReadMapper:
                                       _common.MappedSpan *span) nogil:
         cdef libc.stdint.uint64_t kmer = _kmer.encode(read.bases, span.begin)
         cdef bint forward = span.anchor.entry >= 0
-        cdef int contig_index = (span.anchor.entry if forward
-                                 else ~span.anchor.entry)
+        cdef libc.stdint.int32_t contig_index = (span.anchor.entry if forward
+                                                 else ~span.anchor.entry)
         cdef int contig_length = self.index.contigs_view[contig_index].length
         cdef int move = span.anchor.offset if forward else (
                 contig_length - span.anchor.offset - _kmer.size()
@@ -281,8 +282,8 @@ cdef class ReadMapper:
         cdef libc.stdint.uint64_t kmer = _kmer.encode(read.bases, span.end)
         span.anchor = self.index.map_kmer(kmer)
         cdef bint forward = span.anchor.entry >= 0
-        cdef int contig_index = (span.anchor.entry if forward
-                                 else ~span.anchor.entry)
+        cdef libc.stdint.int32_t contig_index = (span.anchor.entry if forward
+                                                 else ~span.anchor.entry)
         cdef int contig_length = self.index.contigs_view[contig_index].length
         cdef int move = ((contig_length - span.anchor.offset - _kmer.size())
                          if forward else span.anchor.offset)
@@ -369,30 +370,29 @@ cdef inline bint _intersect(_common.MappedSpan *result1,
         return True
     if result2.targets.size == 0:
         return False
-    cdef int read_cursor = 0
-    cdef int write_cursor = 0
+    cdef int cursor1_read = 0
+    cdef int cursor1_write = 0
     cdef int cursor2 = result2.targets.size - 1
     cdef int entry1
     cdef int entry2
-    cdef int i
-    while read_cursor != result1.targets.size and cursor2 != -1:
-        entry1 = result1.targets.items[read_cursor].entry
+    while cursor1_read != result1.targets.size and cursor2 != -1:
+        entry1 = result1.targets.items[cursor1_read].entry
         entry2 = ~result2.targets.items[cursor2].entry
         if entry1 == entry2:
-            result1.targets.items[write_cursor] = (
-                result1.targets.items[read_cursor]
+            result1.targets.items[cursor1_write] = (
+                result1.targets.items[cursor1_read]
             )
-            read_cursor += 1
-            write_cursor += 1
+            cursor1_read += 1
+            cursor1_write += 1
             cursor2 -= 1
         elif entry1 < entry2:
-            read_cursor += 1
+            cursor1_read += 1
         elif entry1 > entry2:
             cursor2 -= 1
-    if write_cursor == 0:
+    if cursor1_write == 0:
         return False
     else:
-        result1.targets.size = write_cursor
+        result1.targets.size = cursor1_write
         return True
 
 
@@ -526,8 +526,8 @@ cdef _coordinate_array.CoordinateArray *_initialize_results(int size) nogil:
 @cython.wraparound(False)
 cdef tuple _get_ids(_coordinate_array.CoordinateArray array):
     cdef list ids = []
-    cdef int i
-    cdef int entry
+    cdef long i
+    cdef libc.stdint.int32_t entry
     for i in range(array.size):
         entry = array.items[i].entry
         if entry < 0:
