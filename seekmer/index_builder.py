@@ -173,20 +173,20 @@ def load_exome(path):
 def read_transcripts(fasta):
     gc.collect()
     _LOG.info('Collecting transcripts')
-    transcriptome = []
+    transcript_ids = []
     sequences = []
     for i, (id_, seq) in enumerate(common.read_fasta(fasta)):
         if i % 10000 == 0:
             _LOG.debug('Collected {} transcripts', i)
-        transcriptome.append(id_.split()[0].split(b'.')[0])
+        transcript_ids.append(id_.split()[0].split(b'.')[0])
         sequences.append(seq)
-    _LOG.info('Collected {} transcripts', len(transcriptome))
-    return transcriptome, sequences
+    _LOG.info('Collected {} transcripts', len(transcript_ids))
+    return transcript_ids, sequences
 
 
 def extract_transcripts_from_genome(fasta, exome):
     _LOG.info('Collecting transcripts')
-    transcriptome = []
+    transcript_ids = []
     sequences = []
     success = False
     for i, (chromosome, sequence) in enumerate(common.read_fasta(fasta)):
@@ -204,10 +204,10 @@ def extract_transcripts_from_genome(fasta, exome):
         new_transcripts, new_sequences = extract_sequences(targets, sequence)
         _LOG.debug('Collected {} transcripts from Chromosome {}',
                    len(new_sequences), chromosome)
-        transcriptome.extend(new_transcripts)
+        transcript_ids.extend(new_transcripts)
         sequences.extend(new_sequences)
-    _LOG.info('Collected {} transcripts', len(transcriptome))
-    return transcriptome, sequences
+    _LOG.info('Collected {} transcripts', len(transcript_ids))
+    return transcript_ids, sequences
 
 
 def _compile_omics(transcript_ids, sequences, exome):
