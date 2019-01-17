@@ -4,23 +4,26 @@ import warnings
 
 import logbook
 import numpy
+import scipy.stats
 
 _LOG = logbook.Logger(__name__)
 
 
-def quantify(index, class_map, class_count, x=None):
+def quantify(index, class_map, class_count, x=None, bootstrap=False):
     """Estimate the transcript abundance.
 
     Parameters
     ----------
     index : seekmer.KMerIndex
         The Seekmer index.
-    class_map : numpy.ndarray
+    class_map : numpy.ndarray[int]
         An array of equivalent classes and their mappable targets.
-    class_count : numpy.ndarray
+    class_count : numpy.ndarray[int]
         The number of reads in each class.
-    x: numpy.ndarray
+    x : numpy.ndarray[float]
         The initial guess of the abundance.
+    bootstrap : bool
+        Whether to bootstrap reads before quantification.
 
     Returns
     -------
@@ -29,6 +32,10 @@ def quantify(index, class_map, class_count, x=None):
     """
     if class_map.size == 0:
         return numpy.zeros(index.transcripts.size, dtype='f4')
+    if bootstrap:
+        n = class_count.sum()
+        p = class_count.astype('f8') / n
+        class_count = scipy.stats.multinomial(n=n, p=p).rvs(n).flatten()
     transcript_length = index.transcripts['length'].astype('f4')
     if x is None:
         x = numpy.ones(len(index.transcripts), dtype='f4') / transcript_length

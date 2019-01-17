@@ -44,6 +44,8 @@ def add_subcommand_parser(subparsers):
     parser.add_argument('-s', '--single-ended', action='store_true',
                         dest='single_ended',
                         help='specify whether the reads are single-ended')
+    parser.add_argument('-b', '--bootstrap', type=int, dest='bootstrap',
+                        help='specify the number of bootstrapped estimation')
 
 
 class MapResult:
@@ -140,7 +142,7 @@ class MapResult:
 
 
 def run(index_path, output_path, fastq_paths, job_count, save_readmap,
-        single_ended, debug, **__):
+        single_ended, bootstrap, debug, **__):
     """The entrypoint of the inference module.
 
     The debugging mode disables parallel mapping.
@@ -159,6 +161,8 @@ def run(index_path, output_path, fastq_paths, job_count, save_readmap,
         Whether to save the read map file.
     single_ended : bool
         Whether the FASTQ files are single-ended reads.
+    bootstrap : int
+        The number of bootstrapped estimation.
     debug : bool
         Whether to enable debugging mode.
     """
@@ -190,8 +194,14 @@ def run(index_path, output_path, fastq_paths, job_count, save_readmap,
     result = quantifier.quantify(index, class_map, class_count)
     _LOG.info('Quantified transcripts')
     transcript_id = numpy.char.decode(index.transcripts['transcript_id'])
-    result = pandas.Series(result, name='tpm', index=transcript_id)
-    result.to_csv(str(output_path / 'abundance.csv'), float_format='%.2f')
+    pandas.Series(result, name='tpm', index=transcript_id).to_csv(
+        str(output_path / 'abundance.csv'), float_format='%.2f',
+    )
+    bootstrapped_results = [
+        quantifier.quantify(index, class_map, class_count, x=result,
+                            bootstrap=True)
+        for __ in range(bootstrap)
+    ]
     _LOG.info('Wrote results to abundance.csv')
 
 
