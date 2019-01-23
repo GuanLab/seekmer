@@ -45,6 +45,7 @@ def add_subcommand_parser(subparsers):
                         dest='single_ended',
                         help='specify whether the reads are single-ended')
     parser.add_argument('-b', '--bootstrap', type=int, dest='bootstrap',
+                        default=0,
                         help='specify the number of bootstrapped estimation')
 
 
