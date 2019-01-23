@@ -66,20 +66,19 @@ def random_sequence(length):
 
 
 def random_fragment(length, transcript_ids, sequences):
-    insert_start = random.randrange(0, length)
-    insert_end = random.randrange(0, length)
-    if insert_start > insert_end:
-        insert_start, insert_end = insert_end, insert_start
-    insert_length = insert_end - insert_start
+    insert_length = random.randrange(20, 40)
+    insert_offset = random.randrange(0, length - insert_length)
     index = random.randrange(0, len(transcript_ids))
     id_ = transcript_ids[index]
-    offset = random.randrange(0, len(sequences[index]))
+    offset = random.randrange(0, len(sequences[index]) - insert_length)
     fragment = b''.join(
-        [random.choice(_BASES) for __ in range(insert_start)]
+        [random.choice(_BASES) for __ in range(insert_offset)]
         + [sequences[index][offset:(offset + insert_length)]]
-        + [random.choice(_BASES) for __ in range(length - insert_end)]
+        + [random.choice(_BASES) for __ in range(length - insert_length
+                                                 - insert_offset)]
     )
-    return '{} {}:{}'.format(id_.decode(), insert_start, insert_end), fragment
+    read_name = '{} {}:{}'.format(id_.decode(), insert_offset, insert_length)
+    return read_name, fragment
 
 
 if __name__ == '__main__':
