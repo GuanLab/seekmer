@@ -9,12 +9,12 @@ source:
   path: ../
 
 build:
-  number: 3
-  script: "python -m pip install . --no-deps -vv"
+  number: 4
+  script: 'env LDSHARED="$CC -shared" python -m pip install . --no-deps -vv'
 
 requirements:
   build:
-    - toolchain_c_linux-64
+    - {{ compiler('c') }}
   host:
     - python
     - cython

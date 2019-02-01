@@ -15,30 +15,48 @@ test:
     - pytest --verbose --cov seekmer/ --pyargs seekmer
   coverage: '/TOTAL.*\s+(\d+%)$/'
 
+test_build_conda_python35:
+  image: condaforge/linux-anvil
+  stage: test
+  script:
+    - conda config --add channels bioconda
+    - conda install -y conda-verify
+    - conda build --python=3.5 recipe/meta.yaml
+  except:
+    - master
+
+test_build_conda_python36:
+  image: condaforge/linux-anvil
+  stage: test
+  script:
+    - conda config --add channels bioconda
+    - conda install -y conda-verify
+    - conda build --python=3.6 recipe/meta.yaml
+  except:
+    - master
+
 build_conda_python35:
   image: condaforge/linux-anvil
   stage: build
   script:
-    - conda config --add channels conda-forge/label/cf201901
     - conda config --add channels bioconda
     - conda install -y conda-verify
     - conda config --set anaconda_upload yes
     - >
       conda build --user guanlab --token $ANACONDA_TOKEN
       --python=3.5 recipe/meta.yaml
-  except:
-    - tags
+  only:
+    - master
 
 build_conda_python36:
   image: condaforge/linux-anvil
   stage: build
   script:
-    - conda config --add channels conda-forge/label/cf201901
     - conda config --add channels bioconda
     - conda install -y conda-verify
     - conda config --set anaconda_upload yes
     - >
       conda build --user guanlab --token $ANACONDA_TOKEN
-      --python=3.5 recipe/meta.yaml
-  except:
-    - tags
+      --python=3.6 recipe/meta.yaml
+  only:
+    - master
