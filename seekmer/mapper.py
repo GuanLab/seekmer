@@ -1,18 +1,23 @@
-__all__ = ('MAX_FRAGMENT_LENGTH', 'add_subcommand_parser', 'MapResult', 'run',
-           'map_reads')
-
 import collections
+import datetime
+import json
 import pathlib
 import queue
+import shlex
+import sys
 import threading
 
 import logbook
 import numpy
 import pandas
+import tables
 
 from . import common
 from . import quantifier
 from ._mapper import (MAX_FRAGMENT_LENGTH, ReadMapper)
+
+__all__ = ('MAX_FRAGMENT_LENGTH', 'add_subcommand_parser', 'MapResult',
+           'SummarizedResult', 'run', 'map_reads')
 
 _LOG = logbook.Logger(__name__)
 
@@ -47,6 +52,20 @@ def add_subcommand_parser(subparsers):
     parser.add_argument('-b', '--bootstrap', type=int, dest='bootstrap',
                         default=0,
                         help='specify the number of bootstrapped estimation')
+
+
+SummarizedResult = collections.namedtuple(
+    'SummarizedResult',
+    [
+        'aligned',
+        'unaligned',
+        'total',
+        'class_map',
+        'class_count',
+        'fragment_length_frequencies',
+        'effective_lengths'
+    ]
+)
 
 
 class MapResult:
@@ -86,17 +105,18 @@ class MapResult:
                 print(read_name.decode(), *[id_.decode() for id_ in ids],
                       sep='\t', file=self.readmap)
 
-    def summarize(self):
-        """Summarize the result into numpy arrays.
+    def summarize(self, index):
+        """Summarize the results.
+
+        Parameters
+        ----------
+        index : seekmer.KMerIndex
+            A Seekmer index.
 
         Returns
         -------
-        int
-            The number of unaligned reads.
-        numpy.ndarray
-            An array of equivalent classes and their mappable targets.
-        numpy.ndarray
-            The number of reads in each class.
+        SummarizedResults
+            The summarized results.
         """
         class_count = []
         class_map = []
@@ -107,7 +127,16 @@ class MapResult:
             class_count.append(count)
         class_map = numpy.asarray(class_map).T
         class_count = numpy.asarray(class_count, dtype='f8')
-        return unaligned, class_map, class_count
+        aligned = class_count.sum()
+        return SummarizedResult(
+            aligned=int(aligned),
+            unaligned=int(unaligned),
+            total=int(aligned + unaligned),
+            class_map=class_map,
+            class_count=class_count,
+            fragment_length_frequencies=self.fragment_length_counts,
+            effective_lengths=index.transcripts['length'].astype('f4'),
+        )
 
     def merge_fragment_lengths(self, fragment_length_counts):
         """Merge fragment length counting.
@@ -167,6 +196,7 @@ def run(index_path, output_path, fastq_paths, job_count, save_readmap,
     debug : bool
         Whether to enable debugging mode.
     """
+    start_time = datetime.datetime.utcnow()
     try:
         output_path.mkdir(parents=True)
     except FileExistsError:
@@ -187,23 +217,18 @@ def run(index_path, output_path, fastq_paths, job_count, save_readmap,
     _LOG.info('Mapped all reads')
     mean_fragment_length = map_result.harmonic_mean_fragment_length
     _LOG.info('Estimated fragment length: {:.2f}', mean_fragment_length)
-    unaligned, class_map, class_count = map_result.summarize()
-    aligned = class_count.sum()
-    _LOG.info('Aligned {} reads ({:.2f}%)',
-              int(aligned), aligned / (aligned + unaligned) * 100)
+    summarized_results = map_result.summarize(index)
     _LOG.info('Quantifying transcripts')
-    result = quantifier.quantify(index, class_map, class_count)
+    main_result = quantifier.quantify(index, summarized_results)
     _LOG.info('Quantified transcripts')
-    transcript_id = numpy.char.decode(index.transcripts['transcript_id'])
-    pandas.Series(result, name='tpm', index=transcript_id).to_csv(
-        str(output_path / 'abundance.csv'), float_format='%.2f',
-    )
     bootstrapped_results = [
-        quantifier.quantify(index, class_map, class_count, x=result,
+        quantifier.quantify(index, summarized_results, x0=main_result,
                             bootstrap=True)
         for __ in range(bootstrap)
     ]
-    _LOG.info('Wrote results to abundance.csv')
+    output_results(output_path, index, start_time, summarized_results,
+                   main_result, bootstrapped_results)
+    _LOG.info('Wrote results to {}'.format(output_path))
 
 
 def map_reads(read_feeder, index, job_count=1, readmap=None, debug=False):
@@ -325,3 +350,158 @@ def feed_pair_ended_reads(paths):
             if reads:
                 yield len(read_names), read_names, reads
     _LOG.debug('Finished reading sequence file(s)')
+
+
+def output_results(output_path, index, start_time, results, main_abundance,
+                   bootstrapped_abundance):
+    """Output the quantification results.
+
+    Parameters
+    ----------
+    output_path : pathlib.Path
+        The path to an output folder.
+    index : seekmer.KMerIndex
+        The Seekmer index used for quantification
+    start_time : datetime.datetime
+        The time when Seekmer mapping started.
+    results : seekmer.SummarizedResults
+        The summarized results.
+    main_abundance : numpy.ndarray[float]
+        The estimated abundance of the transcripts.
+    bootstrapped_abundance : list[numpy.ndarray[float]]
+        The bootstrapped results.
+    """
+    run_info = _generate_run_info(bootstrapped_abundance, index, results,
+                                  start_time)
+    json.dump(run_info, (output_path / 'run_info.json').open('w'))
+    est_counts = _infer_est_counts(index, results, main_abundance)
+    _output_abundance_table(output_path, index, est_counts, main_abundance)
+    _output_hdf5(output_path, index, results, run_info, est_counts,
+                 bootstrapped_abundance)
+
+
+def _generate_run_info(bootstrapped_abundance, index, results, start_time):
+    class_target_count = numpy.bincount(results.class_map[0],
+                                        minlength=results.class_count.size)
+    unique_count = results.class_count[class_target_count == 1].sum()
+    return {
+        'n_targets': len(index.transcripts),
+        'n_bootstraps': len(bootstrapped_abundance),
+        'n_processed': results.total,
+        'n_pseudoaligned': results.aligned,
+        'n_unique': int(unique_count),
+        'p_pseudoaligned': results.aligned / results.total,
+        'p_unique': unique_count / results.total,
+        'kallisto_version': '0.44.0',
+        'index_version': 9000,
+        'start_time': start_time.isoformat(sep=' '),
+        'call': ' '.join([shlex.quote(arg) for arg in sys.argv]),
+    }
+
+
+def _output_abundance_table(output_path, index, est_counts, main_abundance):
+    main_table = pandas.DataFrame()
+    main_table['target_id'] = [
+        id_.decode() for id_ in index.transcripts['transcript_id']
+    ]
+    main_table['length'] = index.transcripts['length']
+    main_table['eff_length'] = index.transcripts['length'].astype('f4')
+    main_table['est_count'] = est_counts
+    main_table['tpm'] = main_abundance
+    main_table.to_csv(str(output_path / 'abundance.tsv'), sep='\t',
+                      index=False, float_format='%g')
+
+
+def _infer_est_counts(index, results, main_abundance):
+    """Estimate read counts for all transcripts.
+
+    Parameters
+    ----------
+    index : seekmer.KMerIndex
+        The Seekmer index used for quantification.
+    results : seekmer.SummarizedResults
+        The summarized mapping results.
+    main_abundance : numpy.ndarray[float]
+        The estimated abundance of transcripts.
+
+    Returns
+    -------
+    numpy.ndarray[float]
+        The estimated read counts for each transcripts.
+    """
+    est_counts = main_abundance * index.transcripts['length']
+    est_counts *= results.aligned / est_counts.sum()
+    return est_counts
+
+
+def _output_hdf5(output_path, index, results, run_info, est_counts,
+                 bootstrapped_abundance):
+    """Generate the HDF5 output file.
+
+    Parameters
+    ----------
+    output_path : pathlib.Path
+        The path to an output folder.
+    index : seekmer.KMerIndex
+        The Seekmer index used for quantification
+    results : seekmer.SummarizedResults
+        The summarized results.
+    run_info : dict
+        The run_info dictionary.
+    est_counts : numpy.ndarray[float]
+        The estimated read counts for each transcripts.
+    bootstrapped_abundance : list[numpy.ndarray[float]]
+        The bootstrapped results.
+    """
+    hdf5_filter = tables.Filters()
+    with tables.open_file(str(output_path / 'abundance.h5'), mode='w',
+                          filters=hdf5_filter) as file:
+        _output_hdf5_run_info(file, index, results, run_info)
+        file.create_carray('/', 'est_counts', obj=est_counts.astype('f8'))
+        if bootstrapped_abundance:
+            group = file.create_group('/', 'bootstrap')
+            for i, bootstrap in enumerate(bootstrapped_abundance):
+                file.create_carray(group, 'bs{}'.format(i), obj=bootstrap)
+
+
+def _output_hdf5_run_info(file, index, results, run_info):
+    """Output aux group to the HDF5 file.
+
+    Parameters
+    ----------
+    file : tables.File
+        The 'aux' group.
+    index : seekmer.KMerIndex
+        The Seekmer index used for quantification
+    results : seekmer.SummarizedResults
+        The summarized results.
+    run_info : dict
+        The run_info dictionary.
+    """
+    group = file.create_group('/', 'aux')
+    file.create_carray(group, 'call',
+                       obj=numpy.frombuffer(run_info['call'].encode(),
+                                            dtype='S1'))
+    file.create_carray(group, 'index_version',
+                       obj=numpy.asarray([run_info['index_version']]))
+    file.create_carray(group, 'start_time',
+                       obj=numpy.frombuffer(run_info['start_time'].encode(),
+                                            dtype='S1'))
+    file.create_carray(group, 'num_bootstrap',
+                       obj=numpy.asarray([run_info['n_bootstraps']]))
+    file.create_carray(group, 'num_processed',
+                       obj=numpy.asarray([run_info['n_processed']]))
+    file.create_carray(group, 'kallisto_version',
+                       obj=numpy.frombuffer(
+                           run_info['kallisto_version'].encode(), dtype='S1',
+                       ))
+    file.create_carray(group, 'ids', obj=index.transcripts['transcript_id'])
+    file.create_carray(group, 'lengths', obj=index.transcripts['length'])
+    file.create_carray(group, 'fld',
+                       obj=results.fragment_length_frequencies.astype('i4'))
+    file.create_carray(group, 'eff_lengths',
+                       obj=results.effective_lengths.astype('f8'))
+    file.create_carray(group, 'bias_observed',
+                       obj=numpy.ones(4096, dtype='i4'))
+    file.create_carray(group, 'bias_normalized',
+                       obj=numpy.ones(4096, dtype='f8'))
