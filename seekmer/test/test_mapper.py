@@ -51,4 +51,4 @@ class TestMapper:
         paths = [shared_datadir / '20_1.fastq', shared_datadir / '20_2.fastq']
         map_result = mapper.map_reads(mapper.feed_pair_ended_reads(paths),
                                       seekmer_index)
-        assert map_result.summarize(seekmer_index).unaligned == 0
+        assert map_result.summarize().unaligned == 0

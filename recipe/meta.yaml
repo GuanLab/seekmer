@@ -9,7 +9,7 @@ source:
   path: ../
 
 build:
-  number: 5
+  number: 6
   script: 'env LDSHARED="$CC -shared" python -m pip install . --no-deps -vv'
 
 requirements:

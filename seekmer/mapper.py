@@ -105,13 +105,8 @@ class MapResult:
                 print(read_name.decode(), *[id_.decode() for id_ in ids],
                       sep='\t', file=self.readmap)
 
-    def summarize(self, index):
+    def summarize(self):
         """Summarize the results.
-
-        Parameters
-        ----------
-        index : seekmer.KMerIndex
-            A Seekmer index.
 
         Returns
         -------
@@ -135,7 +130,7 @@ class MapResult:
             class_map=class_map,
             class_count=class_count,
             fragment_length_frequencies=self.fragment_length_counts,
-            effective_lengths=index.transcripts['length'].astype('f4'),
+            effective_lengths=self.effective_lengths,
         )
 
     def merge_fragment_lengths(self, fragment_length_counts):
@@ -165,6 +160,15 @@ class MapResult:
         denominator = (self.fragment_length_counts[1:].astype('f8')
                        / numpy.arange(1, MAX_FRAGMENT_LENGTH)).sum()
         return numerator / denominator
+
+    @property
+    def effective_lengths(self):
+        length = self.index.transcripts['length']
+        effective_length = numpy.zeros(length.shape, dtype='f8')
+        p = self.fragment_length_counts / self.fragment_length_counts.sum()
+        for i in range(p.size):
+            effective_length += (length - i).clip(min=1) * p[i]
+        return effective_length
 
     def clear(self):
         """Clear the counter."""
@@ -217,7 +221,7 @@ def run(index_path, output_path, fastq_paths, job_count, save_readmap,
     _LOG.info('Mapped all reads')
     mean_fragment_length = map_result.harmonic_mean_fragment_length
     _LOG.info('Estimated fragment length: {:.2f}', mean_fragment_length)
-    summarized_results = map_result.summarize(index)
+    summarized_results = map_result.summarize()
     _LOG.info('Quantifying transcripts')
     main_result = quantifier.quantify(index, summarized_results)
     _LOG.info('Quantified transcripts')
@@ -375,7 +379,8 @@ def output_results(output_path, index, start_time, results, main_abundance,
                                   start_time)
     json.dump(run_info, (output_path / 'run_info.json').open('w'))
     est_counts = _infer_est_counts(index, results, main_abundance)
-    _output_abundance_table(output_path, index, est_counts, main_abundance)
+    _output_abundance_table(output_path, index, results, est_counts,
+                            main_abundance)
     _output_hdf5(output_path, index, results, run_info, est_counts,
                  bootstrapped_abundance)
 
@@ -399,13 +404,14 @@ def _generate_run_info(bootstrapped_abundance, index, results, start_time):
     }
 
 
-def _output_abundance_table(output_path, index, est_counts, main_abundance):
+def _output_abundance_table(output_path, index, results, est_counts,
+                            main_abundance):
     main_table = pandas.DataFrame()
     main_table['target_id'] = [
         id_.decode() for id_ in index.transcripts['transcript_id']
     ]
     main_table['length'] = index.transcripts['length']
-    main_table['eff_length'] = index.transcripts['length'].astype('f4')
+    main_table['eff_length'] = results.effective_lengths.astype('f4')
     main_table['est_count'] = est_counts
     main_table['tpm'] = main_abundance
     main_table.to_csv(str(output_path / 'abundance.tsv'), sep='\t',

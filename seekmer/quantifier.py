@@ -31,7 +31,7 @@ def quantify(index, results, x0=None, bootstrap=False):
         _LOG.info('Aligned {} reads ({:.2%})', results.aligned,
                   results.aligned / results.total)
     if results.class_map.size == 0:
-        return numpy.zeros(index.transcripts.size, dtype='f4')
+        return numpy.zeros(index.transcripts.size).astype('f8')
     if bootstrap:
         n = results.class_count.sum()
         p = results.class_count.astype('f8') / n
@@ -41,11 +41,11 @@ def quantify(index, results, x0=None, bootstrap=False):
     # NOTE: The lengths are intentionally not adjusted. Current tests showed
     # the traditional correction using read fragment length distribution gives
     # higher errors in the final estimation.
-    transcript_length = index.transcripts['length'].astype('f4')
+    transcript_length = results.effective_lengths.astype('f8')
     if x0 is None:
-        x = numpy.ones(transcript_length.size, dtype='f4') / transcript_length
+        x = numpy.ones(transcript_length.size, dtype='f8') / transcript_length
     else:
-        x = x0
+        x = x0.copy()
     x /= x.sum()
     with warnings.catch_warnings():
         warnings.filterwarnings(
