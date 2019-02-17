@@ -1,6 +1,3 @@
-__all__ = ('INVALID_INDEX', 'decompress_and_open', 'read_fasta', 'KMerIndex')
-
-
 import bz2
 import contextlib
 import gzip
@@ -13,9 +10,12 @@ import logbook
 
 from ._common import (INVALID_INDEX, KMerIndex)
 
+__all__ = ('INVALID_INDEX', 'BUFFER_SIZE', 'decompress_and_open', 'read_fasta',
+           'iterate_by_group', 'KMerIndex')
+
+BUFFER_SIZE = 65536
 
 _LOG = logbook.Logger('seekmer.common')
-
 
 _FILE_MODE = 'rb'
 
@@ -39,23 +39,23 @@ def decompress_and_open(path):
     if path.suffix == '.gz':
         try:
             with subprocess.Popen(
-                ['zcat', str(path)], stdout=subprocess.PIPE,
+                    ['zcat', str(path)], stdout=subprocess.PIPE,
             ) as process:
                 yield process.stdout
         except OSError:
             _LOG.warn('Unable to call zcat, falling back to gzip module.')
-            with gzip.open(str(path), _FILE_MODE) as raw,\
+            with gzip.open(str(path), _FILE_MODE) as raw, \
                     io.BufferedReader(raw) as f:
                 yield f
     elif path.suffix == '.bz2':
         try:
             with subprocess.Popen(
-                ['bzcat', str(path)], stdout=subprocess.PIPE,
+                    ['bzcat', str(path)], stdout=subprocess.PIPE,
             ) as process:
                 yield process.stdout
         except OSError:
             _LOG.warn('Unable to call bzcat, falling back to bz2 module.')
-            with bz2.open(str(path), _FILE_MODE) as raw,\
+            with bz2.open(str(path), _FILE_MODE) as raw, \
                     io.BufferedReader(raw) as f:
                 yield f
     elif path.suffix == '.xz' or path.suffix == '.lzma':
@@ -102,3 +102,13 @@ def read_fasta(path):
             sequence.clear()
         if name is not None:
             yield name, b''.join(sequence)
+
+
+def iterate_by_group(iterator, group_size):
+    """Go through an iterator by groups.
+
+    :param iterator:
+    :param group_size:
+    :return:
+    """
+    return zip(*(iter(iterator) * group_size))

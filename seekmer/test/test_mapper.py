@@ -1,5 +1,6 @@
 import pytest
 
+import seekmer.infer
 from .. import common
 from .. import index_builder
 from .. import mapper
@@ -23,7 +24,7 @@ class TestReadFeeder:
     def test_feed_single_ended_reads(self, shared_datadir):
         path = shared_datadir / '20_1.fastq'
         idx = 0
-        for count, names, reads in mapper.feed_single_ended_reads([path]):
+        for count, names, reads in seekmer.infer.feed_single_ended_reads([path]):
             idx += 1
             assert count == 21
             assert len(names) == count
@@ -35,7 +36,7 @@ class TestReadFeeder:
     def test_feed_pair_ended_reads(self, shared_datadir):
         paths = [shared_datadir / '20_1.fastq', shared_datadir / '20_2.fastq']
         idx = 0
-        for count, names, reads in mapper.feed_pair_ended_reads(paths):
+        for count, names, reads in seekmer.infer.feed_pair_ended_reads(paths):
             idx += 1
             assert count == 21
             assert len(names) == count
@@ -49,6 +50,7 @@ class TestMapper:
 
     def test_map_reads(self, shared_datadir, seekmer_index):
         paths = [shared_datadir / '20_1.fastq', shared_datadir / '20_2.fastq']
-        map_result = mapper.map_reads(mapper.feed_pair_ended_reads(paths),
-                                      seekmer_index)
+        map_result = seekmer.infer.map_reads(
+            seekmer.infer.feed_pair_ended_reads(paths),
+            seekmer_index)
         assert map_result.summarize().unaligned == 0

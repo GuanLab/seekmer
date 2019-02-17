@@ -2,15 +2,13 @@
 
 import argparse
 import sys
-import warnings
-
-warnings.filterwarnings("ignore", message="numpy.dtype size changed")
-warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
 
 import logbook
 
+import seekmer.infer
 from . import index_builder
 from . import mapper
+from . import impute
 
 
 def main():
@@ -31,7 +29,9 @@ def main():
         if opts['subcommand'] == 'index':
             index_builder.run(**opts)
         elif opts['subcommand'] == 'infer':
-            mapper.run(**opts)
+            seekmer.infer.run(**opts)
+        elif opts['subcommand'] == 'impute':
+            impute.run(**opts)
         else:
             parser.print_help()
 
