@@ -2,15 +2,11 @@
 
 import argparse
 import sys
-import warnings
-
-warnings.filterwarnings("ignore", message="numpy.dtype size changed")
-warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
 
 import logbook
 
 from . import index_builder
-from . import mapper
+from . import infer
 
 
 def main():
@@ -24,14 +20,14 @@ def main():
                         help='enable debugging messages')
     subparsers = parser.add_subparsers(title='subcommand', dest='subcommand')
     index_builder.add_subcommand_parser(subparsers)
-    mapper.add_subcommand_parser(subparsers)
+    infer.add_subcommand_parser(subparsers)
     opts = vars(parser.parse_args())
     log_handler = initialise_logging(opts)
     with log_handler.applicationbound():
         if opts['subcommand'] == 'index':
             index_builder.run(**opts)
         elif opts['subcommand'] == 'infer':
-            mapper.run(**opts)
+            infer.run(**opts)
         else:
             parser.print_help()
 
