@@ -1,9 +1,8 @@
 import datetime
 import json
-import queue
+import pathlib
 import shlex
 import sys
-import threading
 import warnings
 
 import logbook
@@ -12,10 +11,15 @@ import pandas
 import scipy.stats
 import tables
 
-from . import common
 from . import mapper
+from . import common
 
-__all__ = ('run', 'quantify',)
+__all__ = [
+    'run',
+    'quantify',
+    'em',
+    'output_results',
+]
 
 _LOG = logbook.Logger(__name__)
 
@@ -58,20 +62,20 @@ def run(index_path, output_path, fastq_paths, job_count, save_readmap,
     index = common.KMerIndex.load(index_path)
     _LOG.info('Mapping all reads')
     if single_ended:
-        read_feeder = feed_single_ended_reads(*fastq_paths)
+        read_feeder = common.feed_single_ended_reads(*fastq_paths)
     else:
-        read_feeder = feed_pair_ended_reads(*fastq_paths)
-    map_result = map_reads(read_feeder, index, job_count=job_count,
-                           readmap=readmap, debug=debug)
+        read_feeder = common.feed_pair_ended_reads(*fastq_paths)
+    map_result = mapper.map_reads(index, read_feeder, job_count=job_count,
+                                  readmap=readmap, debug=debug)
     _LOG.info('Mapped all reads')
     mean_fragment_length = map_result.harmonic_mean_fragment_length
     _LOG.info('Estimated fragment length: {:.2f}', mean_fragment_length)
     summarized_results = map_result.summarize()
     _LOG.info('Quantifying transcripts')
-    main_result = quantify(index, summarized_results)
+    main_result = quantify(summarized_results)
     _LOG.info('Quantified transcripts')
     bootstrapped_results = [
-        quantify(index, summarized_results, x0=main_result, bootstrap=True)
+        quantify(summarized_results, x0=main_result, bootstrap=True)
         for __ in range(bootstrap)
     ]
     output_results(output_path, index, start_time, summarized_results,
@@ -79,137 +83,13 @@ def run(index_path, output_path, fastq_paths, job_count, save_readmap,
     _LOG.info('Wrote results to {}'.format(output_path))
 
 
-def map_reads(read_feeder, index, job_count=1, readmap=None, debug=False):
-    """Map reads.
-
-    Parameters
-    ----------
-    read_feeder : iterator of reads
-        The read feeder.
-    index : seekmer.KMerIndex
-        The K-mer index.
-    job_count : int
-        The number of concurrent job threads.
-    readmap : io.TextIOWrapper | NoneType
-        The readmap output file. Default is None.
-    debug : bool
-        Whether to enable debugging mode.
-
-    Returns
-    -------
-    MapResult
-        The mapping results.
-    """
-    map_result = mapper.MapResult(index, readmap)
-    try:
-        if debug:
-            mapper.ReadMapper(index, map_result)(read_feeder)
-        else:
-            reads_queue = queue.Queue(job_count * 2)
-            threads = []
-            for __ in range(job_count):
-                thread = threading.Thread(
-                    target=mapper.ReadMapper(index, map_result),
-                    args=(iter(reads_queue.get, None),)
-                )
-                threads.append(thread)
-                thread.start()
-            for batch in read_feeder:
-                reads_queue.put(batch)
-            for __ in range(job_count):
-                reads_queue.put(None)
-            for thread in threads:
-                thread.join()
-            threads.clear()
-    finally:
-        if readmap is not None:
-            readmap.close()
-    return map_result
-
-
-def feed_single_ended_reads(*paths):
-    """Yield single-ended reads.
-
-    Parameters
-    ----------
-    paths: pathlib.Path
-        The FASTQ files.
-
-    Yields
-    ------
-    int
-        The number of reads.
-    list[bytes]
-        The read names.
-    list[bytes]
-        The reads.
-    """
-    read_names = []
-    reads = []
-    for path in paths:
-        with common.decompress_and_open(path) as file:
-            for i, line in enumerate(file):
-                if i & 3 == 0:
-                    read_names.append(line.strip()[1:])
-                elif i & 3 == 1:
-                    reads.append(line.strip())
-                    if len(read_names) >= common.BUFFER_SIZE:
-                        yield len(read_names), read_names, reads
-                        read_names = []
-                        reads = []
-            if reads:
-                yield len(read_names), read_names, reads
-    _LOG.debug('Finished reading sequence file(s)')
-
-
-def feed_pair_ended_reads(*paths):
-    """Yield pair-ended reads.
-
-    Parameters
-    ----------
-    paths: pathlib.Path
-        The FASTQ files.
-
-    Yields
-    ------
-    int
-        The number of reads.
-    list[bytes]
-        The read names.
-    list[bytes]
-        The read pairs.
-    """
-    if len(paths) % 2 != 0:
-        raise ValueError('cannot process odd numbers of pair-ended files')
-    read_names = []
-    reads = []
-    grouper = [iter(paths)] * 2
-    for path1, path2 in zip(*grouper):
-        with common.decompress_and_open(path1) as file1, \
-                common.decompress_and_open(path2) as file2:
-            for i, (line1, line2) in enumerate(zip(file1, file2)):
-                if i & 3 == 0:
-                    read_names.append(line1.strip()[1:])
-                elif i & 3 == 1:
-                    reads.append(line1.strip())
-                    reads.append(line2.strip())
-                    if len(read_names) >= common.BUFFER_SIZE:
-                        yield len(read_names), read_names, reads
-                        read_names = []
-                        reads = []
-            if reads:
-                yield len(read_names), read_names, reads
-    _LOG.debug('Finished reading sequence file(s)')
-
-
-def quantify(index, results, x0=None, bootstrap=False):
+def quantify(results, x0=None, bootstrap=False):
     """Estimate the transcript abundance.
 
     Parameters
     ----------
-    index : seekmer.KMerIndex
-        The Seekmer index.
     results : seekmer.SummarizedResults
+        Summarized mapping results from the mapper.
     x0 : numpy.ndarray[float]
         The initial guess of the abundance.
     bootstrap : bool
@@ -223,15 +103,15 @@ def quantify(index, results, x0=None, bootstrap=False):
     if not bootstrap:
         _LOG.info('Aligned {} reads ({:.2%})', results.aligned,
                   results.aligned / results.total)
+    transcript_length = results.effective_lengths.astype('f8')
     if results.class_map.size == 0:
-        return numpy.zeros(index.transcripts.size).astype('f8')
+        return numpy.zeros(results.effective_lengths.size).astype('f8')
     if bootstrap:
         n = results.class_count.sum()
         p = results.class_count.astype('f8') / n
         class_count = scipy.stats.multinomial(n=n, p=p).rvs().flatten()
     else:
         class_count = results.class_count
-    transcript_length = results.effective_lengths.astype('f8')
     if x0 is None:
         x = numpy.ones(transcript_length.size, dtype='f8') / transcript_length
     else:
@@ -444,3 +324,31 @@ def _output_hdf5_run_info(file, index, results, run_info):
                        obj=numpy.ones(4096, dtype='i4'))
     file.create_carray(group, 'bias_normalized',
                        obj=numpy.ones(4096, dtype='f8'))
+
+
+def add_subcommand_parser(subparsers):
+    """Add an infer command to the subparsers.
+
+    Parameters
+    ----------
+    subparsers : argparse Subparsers
+        A subparser group
+    """
+    parser = subparsers.add_parser('infer', help='infer transcript abundance')
+    parser.add_argument('index_path', type=pathlib.Path, metavar='index',
+                        help='specify a Seekmer index file')
+    parser.add_argument('output_path', type=pathlib.Path, metavar='output',
+                        help='specify a output folder')
+    parser.add_argument('fastq_paths', type=pathlib.Path, metavar='fastq',
+                        nargs='+', help='specify a FASTQ read file')
+    parser.add_argument('-j', '--jobs', type=int, dest='job_count',
+                        metavar='N', default=1,
+                        help='specify the maximum parallel job number')
+    parser.add_argument('-m', '--save-readmap', action='store_true',
+                        dest='save_readmap', help='output an readmap file')
+    parser.add_argument('-s', '--single-ended', action='store_true',
+                        dest='single_ended',
+                        help='specify whether the reads are single-ended')
+    parser.add_argument('-b', '--bootstrap', type=int, dest='bootstrap',
+                        default=0,
+                        help='specify the number of bootstrapped estimation')

@@ -5,10 +5,8 @@ import sys
 
 import logbook
 
-import seekmer.infer
 from . import index_builder
-from . import mapper
-from . import impute
+from . import infer
 
 
 def main():
@@ -22,16 +20,14 @@ def main():
                         help='enable debugging messages')
     subparsers = parser.add_subparsers(title='subcommand', dest='subcommand')
     index_builder.add_subcommand_parser(subparsers)
-    mapper.add_subcommand_parser(subparsers)
+    infer.add_subcommand_parser(subparsers)
     opts = vars(parser.parse_args())
     log_handler = initialise_logging(opts)
     with log_handler.applicationbound():
         if opts['subcommand'] == 'index':
             index_builder.run(**opts)
         elif opts['subcommand'] == 'infer':
-            seekmer.infer.run(**opts)
-        elif opts['subcommand'] == 'impute':
-            impute.run(**opts)
+            infer.run(**opts)
         else:
             parser.print_help()
 

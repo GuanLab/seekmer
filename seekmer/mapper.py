@@ -1,5 +1,5 @@
 import collections
-import pathlib
+import queue
 import threading
 
 import logbook
@@ -7,41 +7,12 @@ import numpy
 
 from ._mapper import MAX_FRAGMENT_LENGTH, ReadMapper
 
-__all__ = ('MAX_FRAGMENT_LENGTH', 'add_subcommand_parser', 'MapResult',
+__all__ = ('MAX_FRAGMENT_LENGTH', 'MapResult',
            'ReadMapper', 'SummarizedResult')
 
 _LOG = logbook.Logger(__name__)
 
 EPS = numpy.finfo('f4').eps
-
-
-def add_subcommand_parser(subparsers):
-    """Add an infer command to the subparsers.
-
-    Parameters
-    ----------
-    subparsers : argparse Subparsers
-        A subparser group
-    """
-    parser = subparsers.add_parser('infer', help='infer transcript abundance')
-    parser.add_argument('index_path', type=pathlib.Path, metavar='index',
-                        help='specify a Seekmer index file')
-    parser.add_argument('output_path', type=pathlib.Path, metavar='output',
-                        help='specify a output folder')
-    parser.add_argument('fastq_paths', type=pathlib.Path, metavar='fastq',
-                        nargs='+', help='specify a FASTQ read file')
-    parser.add_argument('-j', '--jobs', type=int, dest='job_count',
-                        metavar='N', default=1,
-                        help='specify the maximum parallel job number')
-    parser.add_argument('-m', '--save-readmap', action='store_true',
-                        dest='save_readmap', help='output an readmap file')
-    parser.add_argument('-s', '--single-ended', action='store_true',
-                        dest='single_ended',
-                        help='specify whether the reads are single-ended')
-    parser.add_argument('-b', '--bootstrap', type=int, dest='bootstrap',
-                        default=0,
-                        help='specify the number of bootstrapped estimation')
-
 
 SummarizedResult = collections.namedtuple(
     'SummarizedResult',
@@ -90,7 +61,7 @@ class MapResult:
         self.counter.update(iterable)
         if self.readmap is not None:
             for read_name, targets in zip(read_names, iterable):
-                ids = self.index.transcripts[targets,]['transcript_id']
+                ids = self.index.transcripts[targets, ]['transcript_id']
                 print(read_name.decode(), *[id_.decode() for id_ in ids],
                       sep='\t', file=self.readmap)
 
@@ -162,3 +133,51 @@ class MapResult:
     def clear(self):
         """Clear the counter."""
         self.counter.clear()
+
+
+def map_reads(index, read_feeder, job_count=1, readmap=None, debug=False):
+    """Map reads.
+
+    Parameters
+    ----------
+    index : seekmer.KMerIndex
+        The K-mer index.
+    read_feeder : iterator of reads
+        The read feeder.
+    job_count : int
+        The number of concurrent job threads.
+    readmap : io.TextIOWrapper | NoneType
+        The readmap output file. Default is None.
+    debug : bool
+        Whether to enable debugging mode.
+
+    Returns
+    -------
+    MapResult
+        The mapping results.
+    """
+    map_result = MapResult(index, readmap)
+    try:
+        if debug:
+            ReadMapper(index, map_result)(read_feeder)
+        else:
+            reads_queue = queue.Queue(job_count * 2)
+            threads = []
+            for __ in range(job_count):
+                thread = threading.Thread(
+                    target=ReadMapper(index, map_result),
+                    args=(iter(reads_queue.get, None),)
+                )
+                threads.append(thread)
+                thread.start()
+            for batch in read_feeder:
+                reads_queue.put(batch)
+            for __ in range(job_count):
+                reads_queue.put(None)
+            for thread in threads:
+                thread.join()
+            threads.clear()
+    finally:
+        if readmap is not None:
+            readmap.close()
+    return map_result
