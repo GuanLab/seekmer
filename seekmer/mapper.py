@@ -1,4 +1,5 @@
 import collections
+import multiprocessing.pool
 import queue
 import threading
 
@@ -61,7 +62,7 @@ class MapResult:
         self.counter.update(iterable)
         if self.readmap is not None:
             for read_name, targets in zip(read_names, iterable):
-                ids = self.index.transcripts[targets, ]['transcript_id']
+                ids = self.index.transcripts[targets,]['transcript_id']
                 print(read_name.decode(), *[id_.decode() for id_ in ids],
                       sep='\t', file=self.readmap)
 
@@ -181,3 +182,44 @@ def map_reads(index, read_feeder, job_count=1, readmap=None, debug=False):
         if readmap is not None:
             readmap.close()
     return map_result
+
+
+def map_multiple_samples(index, read_feeders, job_count=1, debug=False):
+    """Map reads for multiple samples.
+
+    Parameters
+    ----------
+    index : seekmer.KMerIndex
+        The K-mer index.
+    read_feeders : iterator of iterator of reads
+        The read feeder.
+    job_count : int
+        The number of concurrent job threads.
+    debug : bool
+        Whether to enable debugging mode.
+
+    Returns
+    -------
+    list[MapResult]
+        The mapping results of all samples.
+    """
+    map_results = []
+    if debug:
+        for read_feeder in read_feeders:
+            result = MapResult(index)
+            map_results.append(result)
+            ReadMapper(index, result)(read_feeder)
+    else:
+        pool = multiprocessing.pool.ThreadPool(job_count)
+        for read_feeder in read_feeders:
+            result = MapResult(index)
+            map_results.append(result)
+            pool.apply_async(_map, args=(index, result, read_feeder))
+        pool.close()
+        pool.join()
+    return map_results
+
+
+def _map(index, map_result, read_feeder):
+    ReadMapper(index, map_result)(read_feeder)
+    return None
