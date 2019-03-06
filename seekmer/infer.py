@@ -72,6 +72,8 @@ def run(index_path, output_path, fastq_paths, job_count, save_readmap,
     _LOG.info('Estimated fragment length: {:.2f}', mean_fragment_length)
     summarized_results = map_result.summarize()
     _LOG.info('Quantifying transcripts')
+    _LOG.info('Aligned {} reads ({:.2%})', summarized_results.aligned,
+              summarized_results.aligned / summarized_results.total)
     main_result = quantify(summarized_results)
     _LOG.info('Quantified transcripts')
     bootstrapped_results = [
@@ -100,9 +102,6 @@ def quantify(results, x0=None, bootstrap=False):
     numpy.ndarray
         The expression level of the transcripts.
     """
-    if not bootstrap:
-        _LOG.info('Aligned {} reads ({:.2%})', results.aligned,
-                  results.aligned / results.total)
     transcript_length = results.effective_lengths.astype('f8')
     if results.class_map.size == 0:
         return numpy.zeros(results.effective_lengths.size).astype('f8')

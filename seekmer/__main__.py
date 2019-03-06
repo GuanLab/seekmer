@@ -7,6 +7,7 @@ import logbook
 
 from . import index_builder
 from . import infer
+from . import impute
 
 
 def main():
@@ -21,6 +22,7 @@ def main():
     subparsers = parser.add_subparsers(title='subcommand', dest='subcommand')
     index_builder.add_subcommand_parser(subparsers)
     infer.add_subcommand_parser(subparsers)
+    impute.add_subcommand_parser(subparsers)
     opts = vars(parser.parse_args())
     log_handler = initialise_logging(opts)
     with log_handler.applicationbound():
@@ -28,6 +30,8 @@ def main():
             index_builder.run(**opts)
         elif opts['subcommand'] == 'infer':
             infer.run(**opts)
+        elif opts['subcommand'] == 'impute':
+            impute.run(**opts)
         else:
             parser.print_help()
 
