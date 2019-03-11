@@ -42,7 +42,7 @@ def add_subcommand_parser(subparsers):
                         metavar='N', default=1,
                         help='specify the maximum parallel job number')
     parser.add_argument('-p', '--power', type=int, dest='power',
-                        metavar='P', default=1,
+                        metavar='P', default=None,
                         help='specify the power of the weight matrix')
     parser.add_argument('-m', '--save-readmap', action='store_true',
                         dest='save_readmap', help='output an readmap file')
@@ -98,17 +98,25 @@ def run(index_path, output_path, fastq_paths, job_count, single_ended, debug,
     map_results = [r.summarize() for r in map_results]
     _LOG.info('First round quantification...')
     base_results = numpy.asarray([infer.quantify(r) for r in map_results])
-    _LOG.info('Weighting cells.')
-    weight = _calculate_cell_weights(index, base_results) ** power
-    _blend_mapping_results(map_results, weight)
-    _LOG.info('Second round quantification...')
     abundances = {}
-    if single_ended:
-        for path, result in zip(fastq_paths, map_results):
-            abundances[str(path)] = infer.quantify(result)
+    if power is not None:
+        _LOG.info('Weighting cells.')
+        weight = _calculate_cell_weights(index, base_results) ** power
+        _blend_mapping_results(map_results, weight)
+        _LOG.info('Second round quantification...')
+        if single_ended:
+            for path, result in zip(fastq_paths, map_results):
+                abundances[str(path)] = infer.quantify(result)
+        else:
+            for path, result in zip(fastq_paths[::2], map_results):
+                abundances[str(path)] = infer.quantify(result)
     else:
-        for path, result in zip(fastq_paths[::2], map_results):
-            abundances[str(path)] = infer.quantify(result)
+        if single_ended:
+            for path, result in zip(fastq_paths, base_results):
+                abundances[str(path)] = result
+        else:
+            for path, result in zip(fastq_paths[::2], base_results):
+                abundances[str(path)] = result
     id_ = numpy.char.decode(index.transcripts['transcript_id'])
     abundances = pandas.DataFrame(abundances, index=id_)
     _LOG.info('Writing results to {}...', output_path)
