@@ -205,6 +205,7 @@ def _calculate_cell_weights(index, base_matrix):
     flattened = weights[(weights == weights) & (weights != 1.0)]
     kmean = sklearn.cluster.KMeans(2)
     kmean.fit(flattened[:, None])
+    weights[weights != weights] = 0.0
     filter_ = (kmean.predict(weights.flatten()[:, None])
                == kmean.cluster_centers_.argmax())
     weights = numpy.where(filter_.reshape(weights.shape), weights, 0.0)
