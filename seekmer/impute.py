@@ -101,7 +101,8 @@ def run(index_path, output_path, fastq_paths, job_count, single_ended, debug,
     abundances = {}
     if power is not None:
         _LOG.info('Weighting cells.')
-        weight = _calculate_cell_weights(index, base_results) ** power
+        weight = _calculate_cell_weights(index, base_results, output_path)
+        weight **= power
         _blend_mapping_results(map_results, weight)
         _LOG.info('Second round quantification...')
         if single_ended:
@@ -179,7 +180,7 @@ def _calculate_uniquely_mapped_counts(index, map_results):
     return gene_read_counts[:, gene_mask]
 
 
-def _calculate_cell_weights(index, base_matrix):
+def _calculate_cell_weights(index, base_matrix, output_path):
     """Estimate the cell weight matrix.
 
     Arguments
@@ -188,6 +189,8 @@ def _calculate_cell_weights(index, base_matrix):
         The Seekmer index.
     base_matrix : numpy.ndarray
         A cell-by-gene count matrix.
+    output_path : pathlib.Path
+        The output folder
 
     Returns
     -------
@@ -201,6 +204,11 @@ def _calculate_cell_weights(index, base_matrix):
         gene_mask = transcript_gene_map == i
         gene_matrix[:, i] = base_matrix[:, gene_mask].sum(axis=1)
     gene_matrix = gene_matrix[:, genes != b'']
+    gene_table = pandas.DataFrame(
+        gene_matrix.T,
+        index=numpy.char.decode(genes[genes != b'']),
+    )
+    gene_table.to_csv(output_path / 'initial_gene_table.csv')
     weights = numpy.corrcoef(gene_matrix)
     flattened = weights[(weights == weights) & (weights != 1.0)]
     kmean = sklearn.cluster.KMeans(2)
@@ -209,6 +217,7 @@ def _calculate_cell_weights(index, base_matrix):
     filter_ = (kmean.predict(weights.flatten()[:, None])
                == kmean.cluster_centers_.argmax())
     weights = numpy.where(filter_.reshape(weights.shape), weights, 0.0)
+    pandas.DataFrame(weights).to_csv(output_path / 'weight.csv')
     return weights
 
 
