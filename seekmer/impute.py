@@ -74,6 +74,9 @@ def run(index_path, output_path, fastq_paths, job_count, single_ended, debug,
     power : int
         The power to raise the weight matrix.
     """
+    for path in fastq_paths:
+        if not pathlib.Path(path).exists():
+            raise ValueError(f'invalid FastQ file: {path}')
     try:
         output_path.mkdir(parents=True)
     except FileExistsError:
