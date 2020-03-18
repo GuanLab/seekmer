@@ -1,5 +1,5 @@
 {% set name = "seekmer" %}
-{% set version = "2019.0.0" %}
+{% set version = "2020.0.0" %}
 
 package:
   name: {{ name }}

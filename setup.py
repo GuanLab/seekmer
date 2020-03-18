@@ -16,7 +16,7 @@ if 'CYTHON_TRACE_NOGIL' in sys.argv:
 
 setuptools.setup(
     name='Seekmer',
-    version='2019.0.0',
+    version='2020.0.0',
     description='A fast RNA-seq mapping tool',
     author='Hongjiu Zhang, Yifan Wang, Ryan Mills, Yuanfang Guan',
     author_email='zhanghj@umich.edu, yifwang@umich.edu, '

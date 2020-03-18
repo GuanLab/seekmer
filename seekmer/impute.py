@@ -42,7 +42,7 @@ def add_subcommand_parser(subparsers):
                         metavar='N', default=1,
                         help='specify the maximum parallel job number')
     parser.add_argument('-p', '--power', type=int, dest='power',
-                        metavar='P', default=None,
+                        metavar='P', default=16,
                         help='specify the power of the weight matrix')
     parser.add_argument('-m', '--save-readmap', action='store_true',
                         dest='save_readmap', help='output an readmap file')
